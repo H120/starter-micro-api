@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clippy Form</title>
+</head>
+<body>
+    <h1>Clippy Form</h1>
+        <!-- Your form fields here -->
+    <form id="clippyFormSend">
+        <label for="text">Text:</label>
+        <textarea type="text" id="text" name="text" required></textarea><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password"></input><br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <p id="clipidMessage"></p>
+
+
+    <form id="clippyFormGet">
+        <label for="text">ClipID:</label>
+        <input type="text" id="clipid" name="clipid" required></input><br><br>
+        <label for="passwordGet">Password:</label>
+        <input type="password" id="passwordGet" name="passwordGet"></input><br><br>
+        <label for="text">Text:</label>
+        <textarea type="text" id="text" name="text"></textarea><br><br>
+        <button type="submit">Get</button>
+    </form>
+    <div id="dataContainer"></div>
+
+    <script>
+
+        const formSend = document.getElementById('clippyFormSend');
+        const formGet = document.getElementById('clippyFormGet');
+        const clipidMessage = document.getElementById('clipidMessage');
+
+        formSend.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(formSend);
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            // Add the current date and time to the data
+            date =new Date();
+            jsonData.date = date.getFullYear()+"/"+date.getMonth()+"/"+date.getDay();
+            jsonData.time = date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
+            try {
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to submit form');
+                }
+
+                const data = await response.json();
+                clipidMessage.textContent = `Clip ID: ${data.clipid}`;
+                console.log('Form submitted successfully!');
+                formSend.reset();
+            } catch (error) {
+                console.error(error);
+                console.log('Failed to submit form');
+            }
+        });
+
+        formGet.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const clipid = document.getElementById('clipid').value;
+            var password = document.getElementById('passwordGet').value;
+
+            try {
+
+
+            let url = `/data/${clipid}`;
+            if (password) {
+                url += `/${password}`;
+            }
+            console.log(url);
+            const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error('Failed to retrieve data');
+                }
+
+                const data = await response.json();
+                const { text, date, time, used } = data;
+                dataContainer.innerHTML = `
+                    <p>Text: ${text}</p>
+                    <p>Date: ${date}</p>
+                    <p>Time: ${time}</p>
+                    <p>Used: ${used}</p>
+                `;
+            } catch (error) {
+                console.error(error);
+                dataContainer.textContent = 'Failed to retrieve data';
+            }
+        });
+    </script>
+</body>
+</html>

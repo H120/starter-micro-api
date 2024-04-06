@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Clippy - Reader</title>
+
+</head>
+<body>
+    <div class="w-full h-1 bg-[#fbbf24] absolute top-0 left-0" id="statusDiv"></div>
+
+    <div class="w-screen h-screen flex items-center justify-center bg-gray-100">
+        <div class="w-[90%] h-[90%] bg-white rounded-lg shadow-lg flex flex-col justify-between overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 bg-green-600 text-white">
+                <span class="text-3xl">Reader</span>
+                <button class="text-lg bg-green-700 px-4 py-2 rounded" onclick="window.location.href = '/index.html';">New</button>
+            </div>
+            <form id="clippyFormGet" class="flex flex-1 overflow-hidden">
+                <div class="w-3/4 bg-gray-200 p-4">
+                <textarea class="w-full h-full bg-gray-200 border-2 border-gray-300 p-2 rounded resize-none text-[24px]" name="text" id="text" placeholder="Text ..." readonly></textarea>
+                </div>
+                <div class="w-1/4 bg-gray-300 p-4 flex flex-col items-center justify-center gap-6">
+                    <span id="clipidShow">ClipID: Read First</span>
+                    <span id="statusShow">Status: Creating new one</span>
+                    <span id="dateShow">Date: 00/00/0000 !</span>
+                    <span id="timeShow">Time: 00:00 !</span>
+                    <span id="usedCount">Number of Used: 0</span>
+                    <span id="lineCount">Number of lines: 0</span>
+                    <input class="w-3/4 bg-gray-200 border-2 border-gray-300 p-2 rounded" id="clipid" name="clipid" type="text" placeholder="Clip ID">
+                    <input class="w-3/4 bg-gray-200 border-2 border-gray-300 p-2 rounded" id="password" name="password" type="text" placeholder="Password (Optional)">
+                    <button class="w-3/4 bg-[#35a65e] text-white px-4 py-2 rounded disabled" id="getButton" type="submit">Read</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+</body>
+
+<script>
+    const textarea = document.getElementById('text');
+    const lineCount = document.getElementById('lineCount');
+    const getButton = document.getElementById('getButton');
+    var date;
+    var time;
+
+    clipid.addEventListener('input', () => {
+        const isClipidEmpty = clipid.value.trim().length === 0;
+        getButton.disabled = isClipidEmpty;
+        getButton.style.backgroundColor= !isClipidEmpty ? "#15803d" : "#35a65e";
+    });
+
+    const formGet = document.getElementById('clippyFormGet');
+    const clipidShow = document.getElementById('clipidShow');
+
+
+    formGet.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const clipid = document.getElementById('clipid').value;
+            var password = document.getElementById('password').value;
+
+            clipidShow.textContent= "ClipID: " + clipid;
+            try {
+
+                let url = `/data/${clipid}`;
+                if (password) {
+                    url += `/${password}`;
+                }
+                console.log(url);
+                const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error('Failed to retrieve data');
+                    }
+
+                    const data = await response.json();
+
+                    const { text, date, time, used, error } = data;
+                    console.log(error);
+                    textarea.value= text;
+                    dateShow.textContent= "Date: "+ date;
+                    timeShow.textContent= "Time: "+ time;
+                    usedCount.textContent= "Number of Used: "+ used;
+                    if (error){
+                        statusShow.textContent = "Status: "+ error;
+                    }else{
+                        statusShow.textContent = "Status: "+ "OK !";
+                    }
+
+                    const lines = textarea.value.length;
+                    lineCount.textContent = `Number of lines: ${lines}`;
+
+            } catch (error) {
+                console.error(error);
+                statusShow.textContent = "Status: "+ error;
+            }
+        });
+
+        // Create a new EventSource for listening to server-sent events
+        const eventSource = new EventSource('/events');
+
+        // Add an event listener for 'message' events
+        eventSource.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Connection Status:', data.message);
+            if(data.message){
+                document.getElementById("statusDiv").style.backgroundColor= "green";
+            }else{
+                document.getElementById("statusDiv").style.backgroundColor= "red";
+            }
+        });
+</script>
+</html>
